@@ -1,11 +1,15 @@
 package samuelesimeone;
 
 import com.github.javafaker.Faker;
+import org.apache.commons.io.FileUtils;
 import samuelesimeone.classi.Libri;
 import samuelesimeone.classi.Riviste;
 import samuelesimeone.enumeratori.Periodo;
 import samuelesimeone.superclassi.Biblioteca;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.*;
@@ -18,13 +22,15 @@ public class Application {
     static Random rdm = new Random();
     static Scanner input = new Scanner(System.in);
 
+    static File file = new File("src/main/java/samuelesimeone/dbCatalogo.txt");
+
     static Supplier<Libri> genrateBook = () ->{
       return new Libri(rdm.nextLong(1000000000), faker.book().title(), generateData(), rdm.nextInt(1000), faker.book().author(), faker.book().genre() );
     };
 
     static Supplier<Riviste> generateMagazine = () ->{
 
-        Integer x = rdm.nextInt();
+        Integer x = rdm.nextInt(3);
         Riviste magazine;
         if (x == 1) {
             magazine = new Riviste(rdm.nextLong(1000000000), faker.book().title(), generateData(), rdm.nextInt(12,30), Periodo.Settimanale);
@@ -43,43 +49,60 @@ public class Application {
         System.out.println("Progetto W2");
 
         List<Biblioteca> bibliotecaList = new ArrayList<>();
-        Integer cmd = 0;
+
 
         for (int i = 0; i < 100; i++) {
             generateCatalogo(bibliotecaList);
         }
 
-        System.out.println("Catalogo in stampa");
-        printCatalogo(bibliotecaList);
-
-        System.out.println("Che azioni vuoi fare nel catalogo? (1-Aggiungi, 2-Cancellazione, 3-Ricerca ISBN, 4-Ricerca Data, 5-Ricerca Autore)");
-        cmd = input.nextInt();
-        switch (cmd){
-            case 1: {
-                newElement(bibliotecaList);
-                break;
+        System.out.println("********************************** Benvenuto ************************************");
+            Integer cmd = 10;
+            System.out.println("Che azioni vuoi fare nel catalogo? (1-Aggiungi, 2-Cancellazione, 3-Ricerca ISBN, 4-Ricerca Data, 5-Ricerca Autore, 6-Salva, 7-Scrivi da DB, 8-Cancella DB, 9-Vedi Catalogo, 0-Esci)");
+            cmd = input.nextInt();
+            switch (cmd){
+                case 1: {
+                    newElement(bibliotecaList);
+                    break;
+                }
+                case 2: {
+                    removeElement(bibliotecaList);
+                    break;
+                }
+                case 3: {
+                    searchElementByISBN(bibliotecaList);
+                    break;
+                }
+                case 4:{
+                    searchElementByDate(bibliotecaList);
+                    break;
+                }
+                case 5:{
+                    searchElementByAuthor(bibliotecaList);
+                    break;
+                }
+                case 6:{
+                    saveOnDisk(bibliotecaList);
+                    break;
+                }
+                case 7:{
+                    bibliotecaList.addAll(writeFromDB(file));
+                    printCatalogo(bibliotecaList);
+                    break;
+                }
+                case 8:{
+                    removeDB(file);
+                    break;
+                }
+                case 9:{
+                    printCatalogo(bibliotecaList);
+                    break;
+                }
+                default:{
+                    System.out.println("Arrivederci");
+                    break;
+                }
             }
-            case 2: {
-                removeElement(bibliotecaList);
-                break;
-            }
-            case 3: {
-                searchElementByISBN(bibliotecaList);
-                break;
-            }
-            case 4:{
-                searchElementByDate(bibliotecaList);
-                break;
-            }
-            case 5:{
-                searchElementByAuthor(bibliotecaList);
-                break;
-            }
-            default:{
-                System.out.println("Arrivederci");
-                break;
-            }
-        }
+            input.close();
 
 
     }
@@ -109,8 +132,9 @@ public class Application {
 
     public static List<Biblioteca> newElement(List<Biblioteca> x){
         String str = "";
-        System.out.println("Cosa vuoi aggiungere?");
-        str = input.nextLine();
+        System.out.println("Cosa vuoi aggiungere? (libro o rivista)");
+        Scanner scanner = new Scanner(System.in);
+        str = scanner.nextLine();
         if (str.equals("libro")){
             Libri newBook = genrateBook.get();
             System.out.println("Libro aggiunto: " + newBook.toString());
@@ -176,8 +200,63 @@ public class Application {
         }
     }
 
+    public static void saveOnDisk(List<Biblioteca> x ){
+        for (int i = 0; i < x.size(); i++) {
+                x.stream().forEach(j -> {
+                    if (j instanceof Libri){
+                        try {
+                            FileUtils.writeStringToFile(file, ((Libri) j).getAutore() + "@" + ((Libri) j).getGenere() + "@" +  j.getCodice_ISBN() + "@" + j.getTitolo() + "@" + j.getAnno_pubblicazione() + "@" + j.getnPagine() + "#" , StandardCharsets.UTF_8, true);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }else {
+                        try {
+                            FileUtils.writeStringToFile(file, j.getTitolo() + "@" + j.getCodice_ISBN() + "@" + ((Riviste) j).getPeriodicità() + "@" + j.getAnno_pubblicazione() + "@" + j.getnPagine() + "#" , StandardCharsets.UTF_8, true);
+                        }catch (IOException e){
+                            System.out.println(e.getMessage());
+                        }
+
+                    }
+                });
+        }
+
+    }
+
+    public static List<Biblioteca> writeFromDB(File x){
+        List<Biblioteca> y = new ArrayList<>();
+        try{
+            String contenuto = FileUtils.readFileToString(file, StandardCharsets.UTF_8);
+
+            List<String> splitElementiString = Arrays.asList(contenuto.split("#"));
+
+            splitElementiString.stream().forEach(str -> {
+                if (str.contains(Periodo.Semestrale) || str.contains(Periodo.Mensile) || str.contains(Periodo.Settimanale)) {
+                    if (str.contains(Periodo.Semestrale)) {
+                        y.add(new Riviste(Long.parseLong(str.split("@")[1]), str.split("@")[0], LocalDate.parse(str.split("@")[3]), Integer.parseInt(str.split("@")[4]), Periodo.Semestrale));
+                    } else if (str.contains(Periodo.Mensile)) {
+                        y.add(new Riviste(Long.parseLong(str.split("@")[1]), str.split("@")[0], LocalDate.parse(str.split("@")[3]), Integer.parseInt(str.split("@")[4]), Periodo.Mensile));
+                    }else {
+                        y.add(new Riviste(Long.parseLong(str.split("@")[1]), str.split("@")[0], LocalDate.parse(str.split("@")[3]), Integer.parseInt(str.split("@")[4]), Periodo.Settimanale));
+                    }
+
+                } else {
+                    y.add(new Libri(Long.parseLong(str.split("@")[2]),str.split("@")[3], LocalDate.parse(str.split("@")[4]), Integer.parseInt(str.split("@")[5]),str.split("@")[0], str.split("@")[1]));
+                }
+            });
+
+            }catch (IOException e){
+                System.out.println(e.getMessage());
+            }
+
+        return y;
+    }
+
     public static void printCatalogo(List<Biblioteca> x){
         System.out.println("********************* Catalogo Completo ********************");
         x.stream().forEach(System.out::println);
+    }
+
+    public static void removeDB (File x){
+        FileUtils.deleteQuietly(x);
     }
 }
