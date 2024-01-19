@@ -6,9 +6,11 @@ import samuelesimeone.classi.Riviste;
 import samuelesimeone.enumeratori.Periodo;
 import samuelesimeone.superclassi.Biblioteca;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 public class Application {
 
@@ -35,30 +37,48 @@ public class Application {
         return magazine;
     };
 
+
     public static void main(String[] args) {
 
         System.out.println("Progetto W2");
 
         List<Biblioteca> bibliotecaList = new ArrayList<>();
-        String str = "";
+        Integer cmd = 0;
 
         for (int i = 0; i < 100; i++) {
             generateCatalogo(bibliotecaList);
         }
 
-            System.out.println("Vuoi inserire un elemento in catalogo?");
-            str = input.nextLine();
-            if (str.equals("si")){
-                newElement(bibliotecaList);
-            }
-
         System.out.println("Catalogo in stampa");
         printCatalogo(bibliotecaList);
 
-        System.out.println("Vuoi rimuovere un elemento in catalogo?");
-        str = input.nextLine();
-        if (str.equals("si")){
-            removeElement(bibliotecaList);
+        System.out.println("Che azioni vuoi fare nel catalogo? (1-Aggiungi, 2-Cancellazione, 3-Ricerca ISBN, 4-Ricerca Data, 5-Ricerca Autore)");
+        cmd = input.nextInt();
+        switch (cmd){
+            case 1: {
+                newElement(bibliotecaList);
+                break;
+            }
+            case 2: {
+                removeElement(bibliotecaList);
+                break;
+            }
+            case 3: {
+                searchElementByISBN(bibliotecaList);
+                break;
+            }
+            case 4:{
+                searchElementByDate(bibliotecaList);
+                break;
+            }
+            case 5:{
+                searchElementByAuthor(bibliotecaList);
+                break;
+            }
+            default:{
+                System.out.println("Arrivederci");
+                break;
+            }
         }
 
 
@@ -119,6 +139,41 @@ public class Application {
         }
         printCatalogo(x);
         return x;
+    }
+
+    public static void searchElementByISBN(List<Biblioteca> x){
+        System.out.println("Quale elemento vuoi cercare?");
+        Long y;
+        y = input.nextLong();
+        List<Biblioteca> elemnet = x.stream().filter(j -> j.getCodice_ISBN().equals(y)).collect(Collectors.toList());
+        System.out.println("Elemento cercato: " + elemnet.get(0));
+    }
+
+    public static void searchElementByDate(List<Biblioteca> x){
+        try{;
+            System.out.println("Di che anno è l'elemento?");
+            Scanner scanner = new Scanner(System.in);
+            String test = scanner.nextLine();
+            LocalDate g = LocalDate.parse(test);
+                List<Biblioteca> element = x.stream().filter(j -> j.getAnno_pubblicazione().equals(g)).collect(Collectors.toList());
+                element.forEach(System.out::println);
+                scanner.close();
+        }catch (DateTimeException e){
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static void searchElementByAuthor(List<Biblioteca> x){
+        try{
+            System.out.println("Inserire il nome dell'autore");
+            Scanner scanner = new Scanner(System.in);
+            String b = scanner.nextLine();
+            List<Biblioteca> element = x.stream().filter(j->j instanceof Libri).filter(a -> ((Libri) a).getAutore().equals(b)).collect(Collectors.toList());
+            element.forEach(System.out::println);
+            scanner.close();
+        }catch (Exception e){
+            e.getMessage();
+        }
     }
 
     public static void printCatalogo(List<Biblioteca> x){
