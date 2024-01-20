@@ -57,14 +57,16 @@ public class Application {
 
         System.out.println("********************************** Benvenuto ************************************");
             Integer cmd = 10;
-            System.out.println("Che azioni vuoi fare nel catalogo? (1-Aggiungi, 2-Cancellazione, 3-Ricerca ISBN, 4-Ricerca Data, 5-Ricerca Autore, 6-Salva, 7-Scrivi da DB, 8-Cancella DB, 9-Vedi Catalogo, 0-Esci)");
+            System.out.println("Che azioni vuoi fare nel catalogo? "+ "\n" + "(1-Aggiungi, 2-Cancellazione, 3-Ricerca ISBN, 4-Ricerca Data, 5-Ricerca Autore, 6-Salva, 7-Scrivi da DB, 8-Cancella DB, 9-Vedi Catalogo, 0-Esci)");
             cmd = input.nextInt();
             switch (cmd){
                 case 1: {
+                    printCatalogo(bibliotecaList);
                     newElement(bibliotecaList);
                     break;
                 }
                 case 2: {
+                    printCatalogo(bibliotecaList);
                     removeElement(bibliotecaList);
                     break;
                 }
@@ -81,6 +83,7 @@ public class Application {
                     break;
                 }
                 case 6:{
+                    printCatalogo(bibliotecaList);
                     saveOnDisk(bibliotecaList);
                     break;
                 }
@@ -98,7 +101,7 @@ public class Application {
                     break;
                 }
                 default:{
-                    System.out.println("Arrivederci");
+                    System.out.println("********************************** Arrivederci ************************************");
                     break;
                 }
             }
@@ -144,7 +147,7 @@ public class Application {
             System.out.println("Rivista aggiunta: " + newMegazine.toString());
             x.add(newMegazine);
         }else {
-            System.out.println("Non è in catalogo questo elemento");
+            System.out.println("Non hai aggiunto nessun elemento in  catalogo");
         }
 
         return x;
@@ -152,20 +155,23 @@ public class Application {
 
     public static List<Biblioteca> removeElement(List<Biblioteca> x){
         Long y = null;
-        System.out.println("Quale elemento vuoi eliminare?");
+        System.out.println("Quale elemento vuoi eliminare? (Inserire il suo codice ISBN)");
         y = input.nextLong();
         ListIterator<Biblioteca> iter = x.listIterator();
         while (iter.hasNext()){
-            if (iter.next().getCodice_ISBN().equals(y)){
-                System.out.println("Elemento con successo rimosso");
+            Biblioteca removeElement = iter.next();
+            if (removeElement.getCodice_ISBN().equals(y)){
+                System.out.println("Elemento rimosso con successo" + "\n" + removeElement);
                 iter.remove();
             }
         }
-        printCatalogo(x);
         return x;
     }
 
     public static void searchElementByISBN(List<Biblioteca> x){
+        System.out.println("Codici ISBN");
+        List<Long> test = x.stream().map(j-> j.getCodice_ISBN()).collect(Collectors.toList());
+        test.forEach(System.out::println);
         System.out.println("Quale elemento vuoi cercare?");
         Long y;
         y = input.nextLong();
@@ -174,6 +180,9 @@ public class Application {
     }
 
     public static void searchElementByDate(List<Biblioteca> x){
+        System.out.println("Date di pubblicazione");
+        List<LocalDate> dates = x.stream().map(j->j.getAnno_pubblicazione()).collect(Collectors.toList());
+        dates.forEach(System.out::println);
         try{;
             System.out.println("Di che anno è l'elemento?");
             Scanner scanner = new Scanner(System.in);
@@ -188,6 +197,9 @@ public class Application {
     }
 
     public static void searchElementByAuthor(List<Biblioteca> x){
+        System.out.println("Autori");
+        List<String> authors = x.stream().filter(j->j instanceof Libri).map(a -> ((Libri) a).getAutore()).collect(Collectors.toList());
+        authors.forEach(System.out::println);
         try{
             System.out.println("Inserire il nome dell'autore");
             Scanner scanner = new Scanner(System.in);
@@ -257,6 +269,7 @@ public class Application {
     }
 
     public static void removeDB (File x){
+        System.out.println("DataBase cancellato");
         FileUtils.deleteQuietly(x);
     }
 }
